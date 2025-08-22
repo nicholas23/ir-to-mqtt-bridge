@@ -29,7 +29,7 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 
 unsigned long lastMsg = 0;           // 用於計時，發送心跳
-const int heartbeatInterval = 5000;  // 心跳間隔 (5秒)
+const int heartbeatInterval = 10000;  // 心跳間隔 (5秒)
 
 // 函式宣告
 void setup_wifi();
@@ -53,7 +53,13 @@ void loop() {
     reconnect_mqtt();
   }
   client.loop();
-
+  // 心跳發送處理
+  unsigned long now = millis();
+  if (now - lastMsg > heartbeatInterval) {
+    lastMsg = now;
+    client.publish(mqtt_heartbeat_topic, "online");
+    //Serial.println("Heartbeat sent.");
+  }
   // 紅外線訊號處理
   if (irrecv.decode(&results)) {
     newIrData = results.value;
@@ -69,14 +75,8 @@ void loop() {
     } 
     lastIrData = newIrData;
     irrecv.resume();  // 繼續接收下一個訊號
-  }
-
-  // 心跳發送處理
-  unsigned long now = millis();
-  if (now - lastMsg > heartbeatInterval) {
-    lastMsg = now;
-    client.publish(mqtt_heartbeat_topic, "online");
-    //Serial.println("Heartbeat sent.");
+  }else{
+      delay(50);
   }
 }
 
